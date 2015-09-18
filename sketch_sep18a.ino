@@ -1,8 +1,17 @@
-#include <FatReader.h>
-#include <SdReader.h>
+/*
+ * Power Tool Drag Racing Arduino Code.
+ * 
+ * 
+ * 
+ */
+
+/*** 
+ *  
+#include "FatReader.h"
+#include "SdReader.h"
 #include <avr/pgmspace.h>
-#include <WaveUtil.h>
-#include <WaveHC.h>
+#include "WaveUtil.h"
+#include "WaveHC.h"
 
 
 
@@ -17,7 +26,7 @@ dir_t dirBuf;     // buffer for directory reads
 
 
 WaveHC wave;      // This is the only wave (audio) object, since we will only play one at a time
-
+***/
 
 
 #define DEBOUNCE 100  // button debouncer
@@ -150,6 +159,7 @@ boolean valLane1Faulted;
 boolean valLane2Faulted;
 boolean valLane1Fault;
 boolean valLane2Fault;
+boolean valStartingPictureTaken;
 
 boolean valLane1Cleared = LOW;
 boolean valLane2Cleared = LOW;
@@ -168,7 +178,7 @@ void LightsOut();
 
 boolean sdCardWorking = LOW;
 
-//* SD Card disable
+/* SD Card disable
 
 // this handy function will return the number of bytes currently free in RAM, great for debugging!
 int freeRam(void)
@@ -225,6 +235,8 @@ void playfile(char *name) {
   wave.play();
 }
 
+*/
+
 // the setup routine runs once when you press reset:
 void setup() {
   currentMillis = millis();
@@ -248,6 +260,8 @@ void setup() {
   pinMode(lane2StartGreenLight, OUTPUT);
   pinMode(lane2FalseStartRedLight, OUTPUT);
   pinMode(lane2WINdicator, OUTPUT);
+  pinMode(startingCamera, OUTPUT);
+  pinMode(finishCamera, OUTPUT);
 
   pinMode(   86,    INPUT);   // set pin to input
   pinMode(     lane1StagingEye,    INPUT);   // set pin to input
@@ -276,10 +290,10 @@ void setup() {
   Serial.begin(9600);
   Serial1.begin(9600);
   Serial2.begin(9600);
-  putstring_nl("WaveHC with 6 buttons");
+  //putstring_nl("WaveHC with 6 buttons");
 
-  putstring("Free RAM: ");       // This can help with debugging, running out of RAM is bad
-  Serial.println(freeRam());      // if this is under 150 bytes it may spell trouble!
+  //putstring("Free RAM: ");       // This can help with debugging, running out of RAM is bad
+  //Serial.println(freeRam());      // if this is under 150 bytes it may spell trouble!
 
   // Set the output pins for the DAC control. This pins are defined in the library
   pinMode(2, OUTPUT);
@@ -289,12 +303,11 @@ void setup() {
 
   // pin13 LED
   pinMode(13, OUTPUT);
-  initSD();
+  //initSD();
 }
 
 /*
  * list recursively - possible stack overflow if subdirectories too nested
- */
 void lsR(FatReader &d)
 {
   int8_t r;                     // indicates the level of recursion
@@ -371,6 +384,8 @@ void initSD()
     putstring_nl("Ready!");
   }
 }
+
+ */
 
 void LightsOut() {
   //reset lights
@@ -496,10 +511,11 @@ void BothStaged() {
   // for backup, just count off 60000 seconds with the racers staged behind the start line
   if ((valStartInitiated && (BOTHSTAGED == state) && (!valPressedStartButton)) || ((currentMillis > lastTimeLane1Unstaged + 60000000) && (currentMillis > lastTimeLane2Unstaged + 60000000)))
   {
-    if (sdCardWorking) {
-      playcomplete("PTDR.WAV");
-      readyToPlayFanfare = LOW;
-    }
+    //if (sdCardWorking) {
+    //  playcomplete("PTDR.WAV");
+    //  readyToPlayFanfare = LOW;
+    //}
+    
     state = RUNNING;
     currentMillis = millis();
     timeCountdownStarted = currentMillis;
@@ -510,6 +526,7 @@ void BothStaged() {
     count3State = LOW;
     count2State = LOW;
     count1State = LOW;
+    valStartingPictureTaken = false;
   }
 }
 
@@ -536,6 +553,11 @@ void CountDownWatchForFinish() {
   {
     if (0 == lane1StartTime)
       lane1StartTime = millis();
+      if (!valStartingPictureTaken) 
+      {
+        digitalWrite(startingCamera, HIGH);
+        valStartingPictureTaken = true;
+      }
     if (!raceStarted)
     {
             Serial1.println(-100);
@@ -552,6 +574,11 @@ void CountDownWatchForFinish() {
   {
     if (0 == lane2StartTime)
       lane2StartTime = millis();
+      if (!valStartingPictureTaken)
+      {
+        digitalWrite(startingCamera, HIGH);
+        valStartingPictureTaken = true;
+      }
     if (!raceStarted)
     {
             Serial2.println(-100);
@@ -693,6 +720,7 @@ void CountDownWatchForFinish() {
     Serial1.println(lane1FinishTime - raceStartTime);
     state = LANE1WON;
     digitalWrite(lane1WINdicator, HIGH);
+    digitalWrite(finishCamera, HIGH);
     timeToStopPowerToLane1WINdicator = lane1FinishTime + 750;
     digitalWrite(lane2PreStageLight, LOW);
     digitalWrite(lane2StageLight, LOW);
@@ -725,6 +753,7 @@ void CountDownWatchForFinish() {
     Serial2.println(lane2FinishTime - raceStartTime);
     state = LANE2WON;
     digitalWrite(lane2WINdicator, HIGH);
+    digitalWrite(finishCamera, HIGH);
     timeToStopPowerToLane2WINdicator = lane2FinishTime + 750;
     digitalWrite(lane1PreStageLight, LOW);
     digitalWrite(lane1StageLight, LOW);
@@ -1001,6 +1030,7 @@ void loop() {
   {
     digitalWrite(lane2WINdicator, LOW);
   }
+
 
   /*
   if (sdCardWorking && readyToPlayFanfare && !(valPressedStartButton)) {
